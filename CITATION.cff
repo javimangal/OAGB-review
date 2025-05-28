@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Plantilla MK Lab"
+authors:
+  - family-names: Mancilla Galindo
+    given-names: Javier
+    orcid: https://orcid.org/0000-0002-0718-467X
+version: 2.0.4
+date-released: 2024-06-30
+doi: pending
+license: Apache-2.0
+repository-code: "https://github.com/javimangal/mklab-plantilla"
