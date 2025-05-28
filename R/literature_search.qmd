@@ -60,24 +60,6 @@ pacman::p_load(
 )
 ```
 
-## Session and package dependencies
-
-```{r}
-#| label: session
-# remove clutter
-session <- sessionInfo()
-session$BLAS <- NULL
-session$LAPACK <- NULL
-session$loadedOnly <- NULL
-# write log file
-writeLines(
-  capture.output(print(session, locale = FALSE)),
-  paste0("sessions/",lubridate::today(), "_literature_search.txt")
-)                                   
-
-session
-```
-
 # PubMed search 
 
 ```{r}
@@ -114,6 +96,28 @@ cat("Articles with DOIs:", sum(!is.na(results$doi)), "\n")
 
 {{< pagebreak >}}
 
+# Embase 
+
+```
+('bariatric surgery'/exp OR 'bariatric surgery' OR 'obesity'/exp/dm_su OR 'morbid obesity'/exp/mj/dm_su) AND ('gastric bypass surgery'/exp OR ('gastric bypass surgery'/exp/mj AND 'methodology'/de) OR 'gastric bypass surgery'/exp/mj/dd_ae OR 'one anastomosis gastric bypass' OR 'oagb' OR 'mini-gastric bypass' OR 'mgb' OR 'omega loop gastric bypass' OR 'olgb' OR 'single anastomosis gastric bypass' OR 'sagb') AND ('clinical trial':it OR 'controlled clinical trial':it OR 'meta analysis':it OR 'observational study':it OR 'systematic review') AND 'human'/exp NOT 'pregnant*' NOT 'child'/exp NOT 'child*' NOT ('letter':it OR 'editorial':it OR 'comment':it OR 'note':it OR 'news':it OR 'case reports':it OR 'conference abstract':it OR 'conference paper':it OR 'conference review':it OR 'chapter':it OR 'erratum':it OR 'tombstone':it OR 'short survey':it)
+```
+
+1846 results
+
+# Web of Science 
+
+```
+TS=("Bariatric Surgery" OR "Obesity surgery" OR "Morbid obesity surgery") AND TS=("Gastric Bypass" OR "Gastric Bypass methods" OR "Gastric Bypass adverse effects" OR "One anastomosis gastric bypass" OR "OAGB" OR "Mini-gastric Bypass" OR "MGB" OR "omega loop gastric bypass" OR "olga" OR "Single anastomosis gastric bypass" OR "SAGB") AND TS=("clinical trial" OR "controlled clinical trial" OR "meta-analysis" OR "observational study" OR "systematic review") NOT TS=("pregnant*" OR "child*")
+```
+
+1711 results
+
+Refined by: Letter or Correction or Data Paper or Proceeding Paper or Editorial Material or Meeting Abstract (Exclude – Document Types)
+
+1643 results
+
+{{< pagebreak >}}
+
 # Session
 
 ```{r}
@@ -131,6 +135,8 @@ writeLines(
 
 session
 ```
+
+{{< pagebreak >}}
 
 # Package References
 

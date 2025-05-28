@@ -45,7 +45,7 @@ vignettes/*.pdf
 .Renviron
 
 # Manuscript and related documentation
-docs/
+docs/manuscript
 
 # translation temp files
 po/*~

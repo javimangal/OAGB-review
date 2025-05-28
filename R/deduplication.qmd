@@ -20,6 +20,8 @@ format:
     toc: true
   docx:
     reference-doc: ../docs/manuscript/template.docx
+  pdf:
+    documentclass: scrartcl
 editor: source
 ---
 
@@ -73,13 +75,17 @@ columns <- c("record_id", "author", "year", "journal", "doi", "title", "pages",
 
 # Load embase data 
 embase <- load_search(
-  path = paste0(inputfolder, "/2025_05_28_Embase.ris"),
+  path = paste0(inputfolder, "/2025-05-28_Embase.ris"),
   method = "ris"
   ) %>% 
   mutate(
     abstract = N2,
     author = A1,
-    number = issue,
+    issue = number,
+    issn = isbn,
+    year = Y1,
+    title = T1,
+    journal = JF,
     source = "embase"
   ) %>% 
   select(all_of(columns)) %>% 
@@ -92,7 +98,7 @@ embase <- load_search(
 
 # Load pubmed data 
 pubmed <- load_search(
-  path = paste0(inputfolder, "/2025_05_28_PubMed.csv"),
+  path = paste0(inputfolder, "/2025-05-28_PubMed.csv"),
   method = "csv"
   ) %>% 
   mutate(
@@ -107,12 +113,12 @@ pubmed <- load_search(
 #| label: web of science
 
 wos <- read_excel(
-  path = file.path(inputfolder, "2025_05_28_WoS.xlsx")
+  path = file.path(inputfolder, "2025-05-28_WoS.xlsx")
   ) %>% 
   mutate(
     record_id = NA,
     author = Authors,
-    year = `Publication Year`,
+    year = as.character(`Publication Year`),
     journal = `Source Title`,
     doi = DOI,
     title = `Article Title`,
@@ -120,7 +126,7 @@ wos <- read_excel(
     volume = as.character(Volume),
     number = Issue,
     abstract = Abstract,
-    isbn = ISBN,
+    issn = ISSN,
     label = NA_character_,
     source = "wos"
   ) %>% 
@@ -145,7 +151,7 @@ A plot of missing data for corroboration before deduplication is shown in **Figu
 
 overview_na(pubmed)
 overview_na(embase)
-overview_na(openalex)
+overview_na(wos)
 ```
 
 ```{r}
@@ -174,31 +180,131 @@ deduplicated <- dedup_citations(
   )
 
 records_unique <- deduplicated$unique 
-records_manual_dedup <- deduplicated$manual_dedup 
+records_manual_dedup <- deduplicated$manual_dedup %>% 
+  mutate(
+    result = case_when(
+      doi == 1 ~ TRUE, 
+      TRUE ~ NA
+    )
+  )
+
+```
+
+
+```{r}
+#| eval: FALSE
 
 true_dups <- manual_dedup_shiny(records_manual_dedup)
 saveRDS(true_dups, file = paste0(tempfolder, "/", lubridate::today(),"_true_duplicates.rds"))
-
-records_final_dedup <- dedup_citations_add_manual(records_unique, additional_pairs = true_dups) 
-
-# Remove retracted study 
+```
 
 
-write_citations(
-  records_final_dedup,
-  type = "csv",
-  filename = paste0(psfolder, "/", lubridate::today(), "2025_05_28_search_deduplicated.csv")
-  )
+```{r}
+true_dups <- read_rds(paste0(tempfolder, "/2025-05-28_true_duplicates.rds"))
 
+records_final_dedup <- dedup_citations_add_manual(records_unique, additional_pairs = true_dups)
+```
+
+```{r}
+#| include: false 
+
+# There are remaining duplicates by doi 
 records_final_dedup %>% 
   group_by(doi) %>% 
   mutate(n = n()) %>% 
   filter(n > 1 & !is.na(doi)) %>%
   ungroup() %>% 
-  arrange(doi)
+  arrange(doi) %>% 
+  summarize(n = n())
 ```
 
-After deduplication, there are a total of `r count(records_unique)` studies. 
+
+```{r}
+# Filter out rows with NA DOI first
+dedup_part <- records_final_dedup %>%
+  filter(!is.na(doi)) %>%
+  mutate(
+    source_priority = case_when(
+      str_detect(source, "pubmed") ~ 1,
+      str_detect(source, "wos") ~ 2,
+      str_detect(source, "embase") ~ 3,
+      TRUE ~ 4
+    )
+  ) %>%
+  group_by(doi) %>%
+  arrange(source_priority) %>%
+  summarise(
+    across(
+      .cols = -c(source, record_ids, source_priority),
+      .fns = ~ first(.)
+    ),
+    source = paste(source, collapse = ", "),
+    record_ids = paste(record_ids, collapse = ", "),
+    .groups = "drop"
+  )
+
+# Add back rows with NA in doi (which are skipped in deduplication)
+dedup_na_part <- records_final_dedup %>%
+  filter(is.na(doi))
+
+# Combine both
+records_final_unique <- bind_rows(dedup_part, dedup_na_part)
+
+```
+
+
+
+```{r}
+write_citations(
+  records_final_unique,
+  type = "csv",
+  filename = paste0(psfolder, "/", lubridate::today(), "_search_deduplicated.csv")
+)
+```
+
+After deduplication, there are a total of `r count(records_final_unique)` studies. 
+
+{{< pagebreak >}}
+
+# ASReview labels
+
+Labels from prior ASReview sessions were imported and merged with the new data. The final datasets are found in the psfolder.
+
+```{r}
+#| include: false
+suffixes <- c("complications", "GERD", "remission", "weight_loss")
+
+for (s in suffixes) {
+  data <- readr::read_csv(paste0("../data/raw/asreview_", s, ".csv"))
+  assign(paste0("asreview_", s), data)
+}
+```
+
+```{r}
+for (s in suffixes) {
+  asreview_df <- get(paste0("asreview_", s))
+  
+  final_df <- records_final_unique %>%
+    # Join only where doi is not NA
+    left_join(
+      asreview_df %>%
+        filter(!is.na(doi)) %>%
+        select(doi, asreview_prior, included, asreview_ranking, exported_notes_1),
+      by = "doi"
+    )
+  
+  assign(paste0("final_asreview_", s), final_df)
+}
+```
+
+```{r}
+# Loop and save each final data frame
+for (s in suffixes) {
+  final_df <- get(paste0("final_asreview_", s))
+  file_name <- paste0(psfolder, "/", today(), "_asreview_final_", s, ".csv")
+  write_csv(final_df, file_name)
+}
+```
 
 {{< pagebreak >}}
 
