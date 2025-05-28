@@ -1,12 +1,37 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
-title: "Plantilla MK Lab"
+title: 'One anastomosis gastric bypass (OAGB): Scoping review'
+message: 'If you use this software, please cite it as below.'
+type: software
 authors:
-  - family-names: Mancilla Galindo
+  - family-names: Mancilla-Galindo
     given-names: Javier
-    orcid: https://orcid.org/0000-0002-0718-467X
-version: 2.0.4
-date-released: 2024-06-30
-doi: pending
-license: Apache-2.0
-repository-code: "https://github.com/javimangal/mklab-plantilla"
+    orcid: 'https://orcid.org/0000-0002-0718-467X'
+    email: j.mancillagalindo@uu.nl
+  - family-names: Guevara-Díaz
+    given-names: Jorge Alberto
+    orcid: 'https://orcid.org/0000-0002-9500-1780'
+  - family-names: Ortíz-Gómez
+    given-names: Jesús Elías
+    orcid: 'https://orcid.org/0000-0001-6386-6010'
+  - family-names: González-Barajas
+    given-names: Alberto Iván
+    orcid: 'https://orcid.org/0009-0002-5357-5943'
+  - family-names: Kammar-García
+    given-names: Ashuin
+    orcid: 'https://orcid.org/0000-0002-3875-0945'
+  - family-names: Guerrero-Gutierrez
+    given-names: Manuel Alberto
+    orcid: 'https://orcid.org/0000-0002-0645-1836'
+repository-code: 'https://github.com/javimangal/OAGB-review'
+keywords:
+  - Bariatric Surgery
+  - Obesity Management
+  - Gastric Bypass
+  - OAGB
+  - Mini gastric bypass
+  - diabetes remission
+  - Postoperative Complications
+license: MIT

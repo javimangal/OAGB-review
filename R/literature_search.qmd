@@ -1,0 +1,150 @@
+---
+title: "One anastomosis gastric bypass (OAGB): Scoping review"
+subtitle: "Literature search"
+author: 
+  - name: Javier Mancilla-Galindo
+    affiliation: Institute for Risk Assessment Sciences, Utrecht University, Utrecht, The Netherlands
+    orcid: 0000-0002-0718-467X
+    email: j.mancillagalindo@uu.nl
+  - name: Jorge Alberto Guevara-Díaz
+    affiliation: Medical Resident, Hospital General Regional No. 1, Instituto Mexicano del Servicio Social, Culiacan, Sinaloa, Mexico
+    orcid: 0000-0002-9500-1780
+keywords: ["Bariatric Surgery", "Obesity Management", "Gastric Bypass", "OAGB", "Mini gastric bypass", "diabetes remission", "Postoperative Complications"]
+execute: 
+  echo: false
+  warning: false
+toc: true
+toc-depth: 1
+format:
+  html:
+    toc: true
+  docx:
+    reference-doc: ../docs/manuscript/template.docx
+editor: source
+---
+
+{{< pagebreak >}}
+
+```{r}
+#| label: directories
+#| include: false
+
+# Create directories for sub-folders  
+inputfolder <- "../data/raw"
+psfolder <- "../data/processed"
+tempfolder <- "../data/temp"
+figfolder <- "../results/output_figures"
+tabfolder <- "../results/output_tables"
+
+dir.create(inputfolder, showWarnings = FALSE)
+dir.create(psfolder, showWarnings = FALSE)
+dir.create(tempfolder, showWarnings = FALSE)
+dir.create(figfolder, showWarnings = FALSE)
+dir.create(tabfolder, showWarnings = FALSE)
+```
+
+```{r}
+#| label: packages
+#| include: false 
+
+if (!require("pacman", quietly = TRUE)) {
+  install.packages("pacman")
+}
+
+pacman::p_load(
+  tidyverse,        # Used for basic data handling and visualization.
+  rentrez,          # Used to search PubMed.
+  XML,              # Used to parse XML data.
+  gt,               # Used to print html tables.  
+  report            # Used to cite packages used in this session.   
+)
+```
+
+## Session and package dependencies
+
+```{r}
+#| label: session
+# remove clutter
+session <- sessionInfo()
+session$BLAS <- NULL
+session$LAPACK <- NULL
+session$loadedOnly <- NULL
+# write log file
+writeLines(
+  capture.output(print(session, locale = FALSE)),
+  paste0("sessions/",lubridate::today(), "_literature_search.txt")
+)                                   
+
+session
+```
+
+# PubMed search 
+
+```{r}
+#| echo: true  
+query <- '(((("Bariatric Surgery"[MeSH Terms] OR "Bariatric Surgery"[All Fields] OR "obesity/surgery"[MeSH Terms] OR "obesity, morbid/surgery"[MeSH Major Topic]) AND ("Gastric Bypass"[MeSH Terms] OR "gastric bypass/methods"[MeSH Major Topic] OR "gastric bypass/adverse effects"[MeSH Major Topic] OR "One anastomosis gastric bypass"[All Fields] OR "OAGB"[All Fields] OR "Mini-gastric Bypass"[All Fields] OR "MGB"[All Fields] OR "omega loop gastric bypass"[All Fields] OR "OLGB"[All Fields] OR "Single anastomosis gastric bypass"[All Fields] OR "SAGB"[All Fields]) AND ("clinical trial"[Publication Type] OR "controlled clinical trial"[Publication Type] OR "meta analysis"[Publication Type] OR "observational study"[Publication Type] OR "systematic review"[Filter]) AND "humans"[MeSH Terms]) NOT "pregnant*"[All Fields]) NOT "Child"[MeSH Terms]) NOT "child*"[All Fields]'
+```
+
+
+```{r}
+# Search PubMed and get the count
+search_results <- entrez_search(db="pubmed", term=query, retmax=0)
+total_count <- search_results$count
+cat("Total articles to retrieve:", total_count, "\n")
+```
+
+
+```{r}
+#| include: false
+
+source("scripts/PubMed_search.R")
+```
+
+
+```{r}
+# Save to CSV
+write.csv(results, paste0(inputfolder,"/",lubridate::today(),"_PubMed.csv"), row.names = FALSE)
+
+# Print summary
+cat("\nRetrieval complete.\n")
+cat("Total articles retrieved:", nrow(results), "\n")
+cat("Articles with abstracts:", sum(!is.na(results$abstract)), "\n")
+cat("Articles with DOIs:", sum(!is.na(results$doi)), "\n")
+```
+
+{{< pagebreak >}}
+
+# Session
+
+```{r}
+#| label: session
+# remove clutter
+session <- sessionInfo()
+session$BLAS <- NULL
+session$LAPACK <- NULL
+session$loadedOnly <- NULL
+# write log file
+writeLines(
+  capture.output(print(session, locale = FALSE)),
+  paste0("sessions/",lubridate::today(), "_literature_search.txt")
+)                                   
+
+session
+```
+
+# Package References
+
+```{r}
+#| output: asis
+report::cite_packages(session)
+```
+
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+pacman::p_unload(negate = TRUE)
+
+rm(list = ls())
+```

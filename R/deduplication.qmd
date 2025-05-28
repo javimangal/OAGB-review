@@ -1,0 +1,240 @@
+---
+title: "One anastomosis gastric bypass (OAGB): Scoping review"
+subtitle: "Deduplication"
+author: 
+  - name: Javier Mancilla-Galindo
+    affiliation: Institute for Risk Assessment Sciences, Utrecht University, Utrecht, The Netherlands
+    orcid: 0000-0002-0718-467X
+    email: j.mancillagalindo@uu.nl
+  - name: Jorge Alberto Guevara-Díaz
+    affiliation: Medical Resident, Hospital General Regional No. 1, Instituto Mexicano del Servicio Social, Culiacan, Sinaloa, Mexico
+    orcid: 0000-0002-9500-1780
+keywords: ["Bariatric Surgery", "Obesity Management", "Gastric Bypass", "OAGB", "Mini gastric bypass", "diabetes remission", "Postoperative Complications"]
+execute: 
+  echo: false
+  warning: false
+toc: true
+toc-depth: 1
+format:
+  html:
+    toc: true
+  docx:
+    reference-doc: ../docs/manuscript/template.docx
+editor: source
+---
+
+```{r}
+#| label: directories
+#| include: false
+
+# Create directories for sub-folders  
+inputfolder <- "../data/raw"
+psfolder <- "../data/processed"
+tempfolder <- "../data/temp"
+figfolder <- "../results/output_figures"
+tabfolder <- "../results/output_tables"
+
+dir.create(inputfolder, showWarnings = FALSE)
+dir.create(psfolder, showWarnings = FALSE)
+dir.create(tempfolder, showWarnings = FALSE)
+dir.create(figfolder, showWarnings = FALSE)
+dir.create(tabfolder, showWarnings = FALSE)
+```
+
+```{r}
+#| label: packages
+#| include: false 
+
+if (!require("pacman", quietly = TRUE)) {
+  install.packages("pacman")
+}
+
+pacman::p_load(
+  devtools,         # Used to install packages from GitHub.
+  tidyverse,        # Used for basic data handling and visualization.
+  readxl,           # Used to read excel files.
+  overviewR,        # Used to check missing data.
+  gt,               # Used to print html tables.  
+  report            # Used to cite packages used in this session.   
+)
+
+pacman::p_load_gh("camaradesuk/ASySD")  # Used to deduplicate studies
+
+```
+
+# Databases searched
+
+```{r}
+#| label: embase
+
+# Columns to select 
+columns <- c("record_id", "author", "year", "journal", "doi", "title", "pages",
+             "volume", "number", "abstract", "issn", "label", "source")
+
+# Load embase data 
+embase <- load_search(
+  path = paste0(inputfolder, "/2025_05_28_Embase.ris"),
+  method = "ris"
+  ) %>% 
+  mutate(
+    abstract = N2,
+    author = A1,
+    number = issue,
+    source = "embase"
+  ) %>% 
+  select(all_of(columns)) %>% 
+  mutate_if(is.character, ~na_if(., ""))
+
+```
+
+```{r}
+#| label: pubmed
+
+# Load pubmed data 
+pubmed <- load_search(
+  path = paste0(inputfolder, "/2025_05_28_PubMed.csv"),
+  method = "csv"
+  ) %>% 
+  mutate(
+    source = "pubmed"
+  ) %>% 
+  select(all_of(columns)) %>% 
+  mutate_if(is.character, ~na_if(., ""))
+
+```
+
+```{r}
+#| label: web of science
+
+wos <- read_excel(
+  path = file.path(inputfolder, "2025_05_28_WoS.xlsx")
+  ) %>% 
+  mutate(
+    record_id = NA,
+    author = Authors,
+    year = `Publication Year`,
+    journal = `Source Title`,
+    doi = DOI,
+    title = `Article Title`,
+    pages = paste0(`Start Page`, "-", `End Page`),
+    volume = as.character(Volume),
+    number = Issue,
+    abstract = Abstract,
+    isbn = ISBN,
+    label = NA_character_,
+    source = "wos"
+  ) %>% 
+  mutate(pages = gsub("-\\+", "", pages),      
+                 pages = ifelse(pages == "NA-NA", NA_character_, pages)) %>% 
+  select(all_of(columns))
+
+```
+
+There are a total of `r count(embase)` records in Embase, `r count(pubmed)` records in PubMed, and `r count(wos)` records in Web of Science.
+
+A plot of missing data for corroboration before deduplication is shown in **Figure 1**. Missing data should be lower than 100% for all variables, except for `record_id` and `label`, which are optional. Overall, **PubMed** has the least amount of missing data, so it will be used as the preferred source to keep in the deduplication procedure to minimize the amount of manual corroborations needed.
+
+```{r}
+#| label: missing
+#| fig-cap: "**Figure 1**. Missing data per database"
+#| fig-subcap:
+#|   - "PubMed"
+#|   - "Embase"
+#|   - "WoS"
+#| layout-ncol: 1
+
+overview_na(pubmed)
+overview_na(embase)
+overview_na(openalex)
+```
+
+```{r}
+#| label: merge
+# Bind Embase, PubMed, and Web of Science 
+records <- bind_rows(
+  embase, 
+  pubmed,
+  wos
+  )
+
+```
+
+There are a total of `r count(records)` records. These will be deduplicated using the Automated Systematic Search Deduplicator (ASySD).
+
+```{r}
+#| label: deduplication
+
+# Deduplicate studies
+deduplicated <- dedup_citations(
+  records, 
+  keep_source = "pubmed",
+  manual_dedup =  TRUE,
+  show_unknown_tags = FALSE,
+  user_input = 1
+  )
+
+records_unique <- deduplicated$unique 
+records_manual_dedup <- deduplicated$manual_dedup 
+
+true_dups <- manual_dedup_shiny(records_manual_dedup)
+saveRDS(true_dups, file = paste0(tempfolder, "/", lubridate::today(),"_true_duplicates.rds"))
+
+records_final_dedup <- dedup_citations_add_manual(records_unique, additional_pairs = true_dups) 
+
+# Remove retracted study 
+
+
+write_citations(
+  records_final_dedup,
+  type = "csv",
+  filename = paste0(psfolder, "/", lubridate::today(), "2025_05_28_search_deduplicated.csv")
+  )
+
+records_final_dedup %>% 
+  group_by(doi) %>% 
+  mutate(n = n()) %>% 
+  filter(n > 1 & !is.na(doi)) %>%
+  ungroup() %>% 
+  arrange(doi)
+```
+
+After deduplication, there are a total of `r count(records_unique)` studies. 
+
+{{< pagebreak >}}
+
+# Session Information
+
+```{r}
+#| label: session
+# remove clutter
+session <- sessionInfo()
+session$BLAS <- NULL
+session$LAPACK <- NULL
+session$loadedOnly <- NULL
+# write log file
+writeLines(
+  capture.output(print(session, locale = FALSE)),
+  paste0("sessions/",lubridate::today(), "_deduplication.txt")
+)                                   
+
+session
+```
+
+{{< pagebreak >}}
+
+# Package References
+
+```{r}
+#| output: asis
+report::cite_packages(session)
+```
+
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+pacman::p_unload(negate = TRUE)
+
+rm(list = ls())
+```
