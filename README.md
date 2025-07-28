@@ -22,6 +22,10 @@ If you are not able to follow the prior steps, you may also consider reviewing t
 
 You can access the exported asreview project files located in the **asreview** folder, which contain the records evaluated for this scoping review. These can be imported into ASReview by [following these instructions](https://asreview.readthedocs.io/en/latest/lab/manage.html).
 
+### RoB
+
+Documentation for the risk of bias (RoB) assessment is provided in the **docs/rob** folder and contains the file created from the [Excel template to implement RoB 2](https://www.riskofbias.info/welcome/rob-2-0-tool/current-version-of-rob-2).
+
 ## Project Structure
 
 The project structure distinguishes three kinds of folders:
