@@ -1,7 +1,15 @@
 # Data
 /data/temp
-/data/processed
-/data/raw
+#/data/processed
+#/data/raw
+
+# Specific raw data files due to proprietary reasons
+/data/raw/2025-05-28_WoS.xlsx
+/data/raw/2025-05-28_PubMed.csv
+/data/raw/2025-05-28_Embase.ris
+
+# Old asreview data files 
+asreview/old
 
 # History files
 .Rhistory
