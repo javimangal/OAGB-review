@@ -1,0 +1,182 @@
+---
+title: "One anastomosis gastric bypass (OAGB): Scoping review"
+subtitle: "ASReview labels"
+author: 
+  - name: Javier Mancilla-Galindo
+    affiliation: Institute for Risk Assessment Sciences, Utrecht University, Utrecht, The Netherlands
+    orcid: 0000-0002-0718-467X
+    email: j.mancillagalindo@uu.nl
+  - name: Jorge Alberto Guevara-Díaz
+    affiliation: Medical Resident, Hospital General Regional No. 1, Instituto Mexicano del Servicio Social, Culiacan, Sinaloa, Mexico
+    orcid: 0000-0002-9500-1780
+keywords: ["Bariatric Surgery", "Obesity Management", "Gastric Bypass", "OAGB", "Mini gastric bypass", "diabetes remission", "Postoperative Complications"]
+execute: 
+  echo: false
+  warning: false
+toc: false
+format:
+  html:
+    toc: true
+  docx:
+    reference-doc: ../docs/manuscript/template.docx
+  pdf:
+    documentclass: scrartcl
+editor: source
+---
+
+```{r}
+#| label: directories
+#| include: false
+
+# Create directories for sub-folders  
+inputfolder <- "../data/raw"
+psfolder <- "../data/processed"
+tempfolder <- "../data/temp"
+figfolder <- "../results/output_figures"
+tabfolder <- "../results/output_tables"
+asreview <- "../asreview"
+
+dir.create(inputfolder, showWarnings = FALSE)
+dir.create(psfolder, showWarnings = FALSE)
+dir.create(tempfolder, showWarnings = FALSE)
+dir.create(figfolder, showWarnings = FALSE)
+dir.create(tabfolder, showWarnings = FALSE)
+dir.create(asreview, showWarnings = FALSE)
+```
+
+```{r}
+#| label: packages
+#| include: false 
+
+if (!require("pacman", quietly = TRUE)) {
+  install.packages("pacman")
+}
+
+pacman::p_load(
+  devtools,         # Used to install packages from GitHub.
+  tidyverse,        # Used for basic data handling and visualization.
+  readxl,           # Used to read excel files.
+  overviewR,        # Used to check missing data.
+  gt,               # Used to print html tables.  
+  report            # Used to cite packages used in this session.   
+)
+
+```
+
+```{r}
+#| label: data
+
+# load weight_loss data and summarize labels
+weight_loss <- read.csv(file.path(asreview, "2025-05-29_weight_loss.csv"))
+
+labels_weight_loss <- weight_loss %>% group_by(asreview_label) %>% summarize(n = n())
+
+# load remission data and summarize labels
+remission <- read.csv(file.path(asreview, "2025-05-29_remission.csv"))
+
+labels_remission <- remission %>% group_by(asreview_label) %>% summarize(n = n())
+
+# load complications data and summarize labels
+complications <- read.csv(file.path(asreview, "2025-05-29_complications.csv"))
+
+labels_complications <- complications %>% group_by(asreview_label) %>% summarize(n = n())
+
+# load GERD data and summarize labels
+
+gerd <- read.csv(file.path(asreview, "2025-05-29_gerd.csv"))
+
+labels_gerd <- gerd %>% group_by(asreview_label) %>% summarize(n = n())
+
+```
+
+```{r}
+# Combine four label summaries in a gt_table 
+
+labels_summary <- bind_rows(
+  labels_weight_loss %>% mutate(label = "Weight loss"),
+  labels_remission %>% mutate(label = "Remission"),
+  labels_complications %>% mutate(label = "Postoperative complications"),
+  labels_gerd %>% mutate(label = "Gastroesophageal reflux disease (GERD)")
+) %>%
+  mutate(asreview_label = case_when(
+    asreview_label == 0 ~ "not relevant",
+    asreview_label == 1 ~ "relevant",
+    TRUE ~ "excluded by ASReview"
+    )) %>% 
+  gt(groupname_col = "label") %>%  
+  tab_header(
+    title = "ASReview labels summary",
+    subtitle = "Number of studies per dataset"
+  ) %>%
+  cols_label(
+    asreview_label = "Study labels",
+    n = "Number of studies"
+  ) %>%
+  tab_options(
+    row_group.background.color = "#f8f9fa", 
+    row_group.font.weight = "bold"
+  )
+
+labels_summary
+```
+
+
+```{r}
+# Create a list of datasets with their corresponding labels
+datasets <- list(
+  "Weight loss" = weight_loss,
+  "Remission" = remission,
+  "Postoperative complications" = complications,
+  "Gastroesophageal reflux disease (GERD)" = gerd
+)
+
+# Combine all relevant studies efficiently
+relevant_studies <- map_dfr(datasets, ~ {
+  .x %>%
+    filter(asreview_label == 1) %>%
+    select(X, doi, duplicate_id)
+}, .id = "label")
+
+deduplicated <- relevant_studies %>% distinct(X) %>% summarize(n = n())
+```
+
+A total of n = `r deduplicated$n` deduplicated relevant studies were identified across the datasets. 
+
+{{< pagebreak >}}
+
+# Session Information
+
+```{r}
+#| label: session
+# remove clutter
+session <- sessionInfo()
+session$BLAS <- NULL
+session$LAPACK <- NULL
+session$loadedOnly <- NULL
+# write log file
+writeLines(
+  capture.output(print(session, locale = FALSE)),
+  paste0("sessions/",lubridate::today(), "_included_asreview.txt")
+)                                   
+
+session
+```
+
+{{< pagebreak >}}
+
+# Package References
+
+```{r}
+#| output: asis
+report::cite_packages(session)
+```
+
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+pacman::p_unload(negate = TRUE)
+
+rm(list = ls())
+```

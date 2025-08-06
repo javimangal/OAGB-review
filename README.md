@@ -13,10 +13,11 @@ The suggested use of this repository starts with making sure that R and RStudio 
 6. Open one of the .qmd files. You can run every chunk of code sequentially to reproduce the analyses. Make sure to respect the order and if something fails, I recommend that you start running al chunks of code from the beginning. If you don't know how to run a chunk of code, you can [imitate what this person is doing](https://youtu.be/RPF6gGyeJmg?feature=shared&t=30). If you get a message saying "Access denied", change from *Visual* to *Source* mode which can be done with the Ctrl+Shift+F4 command.
 7. Please note that scripts are meant to be sourced into the flow of analyses in the main .qmd files. You may encounter problems if you attempt to run the scripts independently. 
 
-If you are not able to follow the prior steps, you may also consider reviewing the [PDF reports](docs) documenting the analyses. 
+If you are not able to follow the prior steps, you may also consider reviewing the [PDF and docx reports](docs) documenting the analyses. 
 
--   [literature_search.qmd](R/literature_search.qmd). Documentation of search strategy in PubMed, Embase, and Web of Science. [PDF](docs/literature_search.docx)
--   [deduplication.qmd](R/deduplication.qmd). Main commented code file for deduplication with ASySD. [PDF](docs/deduplication.docx)
+-   [literature_search.qmd](R/literature_search.qmd). Documentation of search strategy in PubMed, Embase, and Web of Science. [docx](docs/reports/literature_search.docx)
+-   [deduplication.qmd](R/deduplication.qmd). Main commented code file for deduplication with ASySD. [docx](docs/reports/deduplication.docx)
+-   [included_asreview.qmd](R/included_asreview.qmd). Documentation of the included records in the ASReview project. [PDF](docs/reports/included_asreview.pdf)
 
 ### ASReview 
 
